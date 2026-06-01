@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Inference Observatory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@dqbd/tiktoken@1.0.7/tiktoken.bundle.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ── NAVIGATION BAR ─────────────────────────────────────────────── -->
+  <header id="navbar">
+    <div id="nav-left">
+      <div id="nav-dot"></div>
+      <span id="nav-title">The Inference Observatory</span>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         PROMPT INPUT PANEL
+    ══════════════════════════════════════════════════════════════ -->
+    <section id="prompt-panel" class="panel panel-accent">
+      <div id="prompt-header">
+        <div>
+          <p class="label">Input</p>
+          <h2 class="heading">Prompt</h2>
+        </div>
+        <button id="run-all-btn" class="btn-primary">
+          ⚡ Run All Strategies
+        </button>
+      </div>
+
+      <textarea
+        id="prompt-input"
+        placeholder="Enter any prompt — e.g. 'Explain how neural networks learn'"
+        rows="4"
+      ></textarea>
+
+      <div id="prompt-stats">
+        <div class="stat-box">
+          <p class="label">Est. Tokens</p>
+          <p class="data" id="token-count">0</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Avg Tok/s</p>
+          <p class="data" id="tokens-per-sec">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Max Tokens</p>
+          <input
+            type="number"
+            id="max-tokens"
+            class="data-input"
+            value="150"
+            min="50"
+            max="300"
+          />
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════════════════════
+     GROUP 1 — DETERMINISTIC DECODING
+══════════════════════════════════════════════════════════════ -->
+<section class="group-section" id="group-deterministic">
+
+  <div class="group-header">
+    <div class="group-header-left">
+      <span class="group-tag">Group 1</span>
+      <div>
+        <p class="label">Deterministic Decoding</p>
+        <h2 class="heading">Always picks the most probable path</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strategy Cards with embedded Token Replay -->
+  <div class="strategies-container" id="cards-deterministic">
+
+    <!-- GREEDY -->
+    <div class="strategy-card pending"
+         id="col-greedy"
+         data-strategy="greedy"
+         data-group="deterministic">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Greedy</span>
+          <span class="col-params">deterministic</span>
+        </div>
+        <p class="col-description">
+          Always picks the single highest probability token.
+          No randomness. Same output every run.
+        </p>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <!-- Token Replay embedded inside card -->
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-greedy"></div>
+      </div>
+    </div>
+
+    <!-- BEAM SEARCH -->
+    <div class="strategy-card pending"
+         id="col-beam"
+         data-strategy="beam_search"
+         data-group="deterministic">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Beam Search</span>
+          <div class="col-param-control">
+            <label class="param-label">Beams</label>
+            <input type="number" class="param-input" id="param-beam-size"
+                   value="5" min="2" max="10" />
+          </div>
+        </div>
+        <p class="col-description">
+          Explores multiple paths simultaneously.
+          Keeps top N beams at every step.
+        </p>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-beam_search"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Group 1 Output -->
+  <div class="group-output" id="output-deterministic">
+    <p class="label" style="margin-bottom: 12px;">Group Output — Deterministic</p>
+    <div class="group-output-grid">
+      <div class="group-output-col">
+        <p class="group-output-label">Greedy</p>
+        <p class="group-output-text" id="output-text-greedy">
+          Waiting for results...
+        </p>
+      </div>
+      <div class="group-output-col">
+        <p class="group-output-label">Beam Search</p>
+        <p class="group-output-text" id="output-text-beam_search">
+          Waiting for results...
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 1 Within-Group Similarity -->
+  <div class="group-similarity" id="similarity-deterministic">
+    <p class="label" style="margin-bottom: 12px;">
+      Within-Group Similarity — Group 1
+    </p>
+    <div class="similarity-grid" id="similarity-grid-deterministic">
+      <p class="label">Waiting for results...</p>
+    </div>
+    <div class="similarity-avg" id="similarity-avg-deterministic"></div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     GROUP 2 — PURE SAMPLING
+══════════════════════════════════════════════════════════════ -->
+<section class="group-section" id="group-sampling">
+
+  <div class="group-header">
+    <div class="group-header-left">
+      <span class="group-tag">Group 2</span>
+      <div>
+        <p class="label">Pure Sampling</p>
+        <h2 class="heading">Draws randomly from the full distribution</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="strategies-container" id="cards-sampling">
+
+    <!-- RANDOM SAMPLING -->
+    <div class="strategy-card pending"
+         id="col-sampling"
+         data-strategy="sampling"
+         data-group="sampling">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Random Sampling</span>
+          <span class="col-params">temp=1.0</span>
+        </div>
+        <p class="col-description">
+          Samples from the full unfiltered distribution.
+          Every token has a chance. Output varies every run.
+        </p>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-sampling"></div>
+      </div>
+    </div>
+
+    <!-- TEMPERATURE -->
+    <div class="strategy-card pending"
+         id="col-temperature"
+         data-strategy="temperature"
+         data-group="sampling">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Temperature</span>
+          <div class="col-param-control">
+            <label class="param-label">Temp</label>
+            <input type="number" class="param-input" id="param-temperature"
+                   value="0.7" min="0.1" max="2.0" step="0.1" />
+          </div>
+        </div>
+        <p class="col-description">
+          Reshapes distribution before sampling.
+          Low = focused. High = creative and random.
+        </p>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-temperature"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Group 2 Output -->
+  <div class="group-output" id="output-sampling">
+    <p class="label" style="margin-bottom: 12px;">Group Output — Pure Sampling</p>
+    <div class="group-output-grid">
+      <div class="group-output-col">
+        <p class="group-output-label">Random Sampling</p>
+        <p class="group-output-text" id="output-text-sampling">
+          Waiting for results...
+        </p>
+      </div>
+      <div class="group-output-col">
+        <p class="group-output-label">Temperature</p>
+        <p class="group-output-text" id="output-text-temperature">
+          Waiting for results...
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 2 Within-Group Similarity -->
+  <div class="group-similarity" id="similarity-sampling">
+    <p class="label" style="margin-bottom: 12px;">
+      Within-Group Similarity — Group 2
+    </p>
+    <div class="similarity-grid" id="similarity-grid-sampling">
+      <p class="label">Waiting for results...</p>
+    </div>
+    <div class="similarity-avg" id="similarity-avg-sampling"></div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     GROUP 3A — BASIC CONSTRAINED SAMPLING
+══════════════════════════════════════════════════════════════ -->
+<section class="group-section" id="group-basic-constrained">
+
+  <div class="group-header">
+    <div class="group-header-left">
+      <span class="group-tag">Group 3A</span>
+      <div>
+        <p class="label">Basic Constrained Sampling</p>
+        <h2 class="heading">Filters the distribution before sampling</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="strategies-container" id="cards-basic-constrained">
+
+    <!-- TOP-K -->
+    <div class="strategy-card pending"
+         id="col-top-k"
+         data-strategy="top_k"
+         data-group="basic-constrained">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Top-k</span>
+          <div class="col-param-control">
+            <label class="param-label">k</label>
+            <input type="number" class="param-input" id="param-top-k"
+                   value="50" min="1" max="200" />
+          </div>
+        </div>
+        <p class="col-description">
+          Keeps only the top k most probable tokens.
+          All others set to zero probability.
+        </p>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-top_k"></div>
+      </div>
+    </div>
+
+    <!-- TOP-P -->
+    <div class="strategy-card pending"
+         id="col-top-p"
+         data-strategy="top_p"
+         data-group="basic-constrained">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Top-p / Nucleus</span>
+          <div class="col-param-control">
+            <label class="param-label">p</label>
+            <input type="number" class="param-input" id="param-top-p"
+                   value="0.9" min="0.1" max="1.0" step="0.05" />
+          </div>
+        </div>
+        <p class="col-description">
+          Keeps smallest set of tokens covering p% probability.
+          Dynamic nucleus size adapts to model confidence.
+        </p>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-top_p"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Group 3A Output -->
+  <div class="group-output" id="output-basic-constrained">
+    <p class="label" style="margin-bottom: 12px;">
+      Group Output — Basic Constrained
+    </p>
+    <div class="group-output-grid">
+      <div class="group-output-col">
+        <p class="group-output-label">Top-k</p>
+        <p class="group-output-text" id="output-text-top_k">
+          Waiting for results...
+        </p>
+      </div>
+      <div class="group-output-col">
+        <p class="group-output-label">Top-p / Nucleus</p>
+        <p class="group-output-text" id="output-text-top_p">
+          Waiting for results...
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 3A Within-Group Similarity -->
+  <div class="group-similarity" id="similarity-basic-constrained">
+    <p class="label" style="margin-bottom: 12px;">
+      Within-Group Similarity — Group 3A
+    </p>
+    <div class="similarity-grid" id="similarity-grid-basic-constrained">
+      <p class="label">Waiting for results...</p>
+    </div>
+    <div class="similarity-avg" id="similarity-avg-basic-constrained"></div>
+  </div>
+
+</section>
+
+
+<!-- GROUP 3B — HYBRID CONSTRAINED SAMPLING -->
+<section class="group-section" id="group-hybrid-constrained">
+
+  <div class="group-header">
+    <div class="group-header-left">
+      <span class="group-tag">Group 3B</span>
+      <div>
+        <p class="label">Hybrid Constrained Sampling</p>
+        <h2 class="heading">Combines multiple constraints simultaneously</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="strategies-container strategies-container-4"
+       id="cards-hybrid-constrained">
+
+    <!-- TOP-K + TOP-P -->
+    <div class="strategy-card pending"
+         id="col-top-k-top-p"
+         data-strategy="top_k_top_p"
+         data-group="hybrid-constrained">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Top-k + Top-p</span>
+        </div>
+        <p class="col-description">Applies both k and p filters together.</p>
+        <div class="param-row">
+          <div class="col-param-control">
+            <label class="param-label">k</label>
+            <input type="number" class="param-input" id="param-tktp-k"
+                   value="50" min="1" max="200" />
+          </div>
+          <div class="col-param-control">
+            <label class="param-label">p</label>
+            <input type="number" class="param-input" id="param-tktp-p"
+                   value="0.9" min="0.1" max="1.0" step="0.05" />
+          </div>
+        </div>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-top_k_top_p"></div>
+      </div>
+    </div>
+
+    <!-- TEMP + TOP-K -->
+    <div class="strategy-card pending"
+         id="col-temp-top-k"
+         data-strategy="temp_top_k"
+         data-group="hybrid-constrained">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Temp + Top-k</span>
+        </div>
+        <p class="col-description">
+          Reshapes distribution then applies k filter.
+        </p>
+        <div class="param-row">
+          <div class="col-param-control">
+            <label class="param-label">Temp</label>
+            <input type="number" class="param-input" id="param-ttk-temp"
+                   value="0.7" min="0.1" max="2.0" step="0.1" />
+          </div>
+          <div class="col-param-control">
+            <label class="param-label">k</label>
+            <input type="number" class="param-input" id="param-ttk-k"
+                   value="50" min="1" max="200" />
+          </div>
+        </div>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-temp_top_k"></div>
+      </div>
+    </div>
+
+    <!-- TEMP + TOP-P -->
+    <div class="strategy-card pending"
+         id="col-temp-top-p"
+         data-strategy="temp_top_p"
+         data-group="hybrid-constrained">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Temp + Top-p</span>
+        </div>
+        <p class="col-description">
+          Reshapes distribution then applies p nucleus filter.
+        </p>
+        <div class="param-row">
+          <div class="col-param-control">
+            <label class="param-label">Temp</label>
+            <input type="number" class="param-input" id="param-ttp-temp"
+                   value="0.7" min="0.1" max="2.0" step="0.1" />
+          </div>
+          <div class="col-param-control">
+            <label class="param-label">p</label>
+            <input type="number" class="param-input" id="param-ttp-p"
+                   value="0.9" min="0.1" max="1.0" step="0.05" />
+          </div>
+        </div>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-temp_top_p"></div>
+      </div>
+    </div>
+
+    <!-- TEMP + TOP-K + TOP-P -->
+    <div class="strategy-card pending"
+         id="col-temp-top-k-top-p"
+         data-strategy="temp_top_k_top_p"
+         data-group="hybrid-constrained">
+      <div class="strategy-card-header">
+        <div class="strategy-card-title-row">
+          <span class="col-title">Temp + Top-k + Top-p</span>
+        </div>
+        <p class="col-description">All three constraints applied together.</p>
+        <div class="param-row">
+          <div class="col-param-control">
+            <label class="param-label">Temp</label>
+            <input type="number" class="param-input" id="param-ttkp-temp"
+                   value="0.7" min="0.1" max="2.0" step="0.1" />
+          </div>
+          <div class="col-param-control">
+            <label class="param-label">k</label>
+            <input type="number" class="param-input" id="param-ttkp-k"
+                   value="50" min="1" max="200" />
+          </div>
+          <div class="col-param-control">
+            <label class="param-label">p</label>
+            <input type="number" class="param-input" id="param-ttkp-p"
+                   value="0.9" min="0.1" max="1.0" step="0.05" />
+          </div>
+        </div>
+      </div>
+      <div class="col-stats">
+        <div class="stat-box">
+          <p class="label">Tokens</p>
+          <p class="data col-token-count">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Latency</p>
+          <p class="data col-latency">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Tok/s</p>
+          <p class="data col-toks">—</p>
+        </div>
+        <div class="stat-box">
+          <p class="label">Finish</p>
+          <p class="data col-finish">—</p>
+        </div>
+      </div>
+      <div class="card-streaming">
+        <p class="card-streaming-label">Token Replay</p>
+        <div class="streaming-display" id="stream-temp_top_k_top_p"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Group 3B Output -->
+  <div class="group-output" id="output-hybrid-constrained">
+    <p class="label" style="margin-bottom: 12px;">
+      Group Output — Hybrid Constrained
+    </p>
+    <div class="group-output-grid group-output-grid-4">
+      <div class="group-output-col">
+        <p class="group-output-label">Top-k + Top-p</p>
+        <p class="group-output-text" id="output-text-top_k_top_p">
+          Waiting for results...
+        </p>
+      </div>
+      <div class="group-output-col">
+        <p class="group-output-label">Temp + Top-k</p>
+        <p class="group-output-text" id="output-text-temp_top_k">
+          Waiting for results...
+        </p>
+      </div>
+      <div class="group-output-col">
+        <p class="group-output-label">Temp + Top-p</p>
+        <p class="group-output-text" id="output-text-temp_top_p">
+          Waiting for results...
+        </p>
+      </div>
+      <div class="group-output-col">
+        <p class="group-output-label">Temp + Top-k + Top-p</p>
+        <p class="group-output-text" id="output-text-temp_top_k_top_p">
+          Waiting for results...
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 3B Within-Group Similarity -->
+  <div class="group-similarity" id="similarity-hybrid-constrained">
+    <p class="label" style="margin-bottom: 12px;">
+      Within-Group Similarity — Group 3B
+    </p>
+    <div class="similarity-grid" id="similarity-grid-hybrid-constrained">
+      <p class="label">Waiting for results...</p>
+    </div>
+    <div class="similarity-avg" id="similarity-avg-hybrid-constrained"></div>
+  </div>
+
+</section>
+
+    <!-- ANALYSIS SECTION -->
+<section id="analysis-section" class="panel">
+
+  <div class="analysis-header">
+    <div>
+      <p class="label">Deep Analysis</p>
+      <h2 class="heading">Attention, Consistency, Tradeoffs, Cross-Group</h2>
+      <p class="secondary" style="margin-top: 6px;">
+        Runs after all strategies complete.
+        Evaluates the model across all dimensions.
+      </p>
+    </div>
+    <button id="run-analysis-btn" class="btn-primary" disabled>
+      Run Analysis
+    </button>
+  </div>
+
+  <!-- ATTENTION HEATMAP CARD -->
+  <div class="analysis-block" id="analysis-attention">
+    <div>
+      <p class="label">Attention Heatmap</p>
+      <h3 class="analysis-subheading">What the model focused on</h3>
+      <p class="secondary">
+        Self-attention matrix averaged across all layers and heads.
+        Every token's relationship to every other token.
+      </p>
+    </div>
+    <div id="attention-display">
+      <p class="label">Waiting for Run Analysis...</p>
+    </div>
+  </div>
+
+  <!-- CONSISTENCY TRACKER CARD -->
+<div class="analysis-block" id="analysis-consistency">
+  <div>
+    <p class="label">Consistency Tracker</p>
+    <h3 class="analysis-subheading">How much do outputs vary across runs?</h3>
+    <p class="secondary">
+      Runs the selected strategy 5 times. Deterministic strategies
+      always produce identical outputs. Sampling strategies vary.
+    </p>
+  </div>
+  <div class="selector-row">
+    <label class="param-label">Strategy</label>
+    <select id="consistency-strategy-select" class="strategy-select">
+      <option value="sampling">Random Sampling</option>
+      <option value="temperature">Temperature</option>
+      <option value="top_k">Top-k</option>
+      <option value="top_p">Top-p</option>
+      <option value="top_k_top_p">Top-k + Top-p</option>
+      <option value="temp_top_k">Temp + Top-k</option>
+      <option value="temp_top_p">Temp + Top-p</option>
+      <option value="temp_top_k_top_p">Temp + Top-k + Top-p</option>
+      <option value="greedy">Greedy</option>
+      <option value="beam_search">Beam Search</option>
+    </select>
+    <button id="consistency-run-btn" class="btn-ghost">
+      Run 5×
+    </button>
+  </div>
+  <div id="consistency-display">
+    <p class="label">Select a strategy and click Run 5×.</p>
+  </div>
+</div>
+
+  <!-- TRADEOFF DASHBOARD CARD -->
+  <div class="analysis-block" id="analysis-dashboard">
+    <div>
+      <p class="label">Inference Tradeoff Dashboard</p>
+      <h3 class="analysis-subheading">Quality vs Speed — all strategies</h3>
+      <p class="secondary">
+        Latency, token count, and tokens per second
+        across all 10 strategies in one view.
+      </p>
+    </div>
+    <div id="dashboard-table-wrap">
+      <p class="label">Waiting for Run Analysis...</p>
+    </div>
+  </div>
+
+  <!-- CROSS-GROUP SIMILARITY CARD -->
+  <div class="analysis-block" id="analysis-cross-similarity">
+    <div>
+      <p class="label">Cross-Group Semantic Similarity</p>
+      <h3 class="analysis-subheading">
+        Do strategies across groups say the same thing?
+      </h3>
+      <p class="secondary">
+        Cosine similarity between embeddings of outputs
+        from different decoding families.
+      </p>
+    </div>
+    <div class="similarity-grid" id="similarity-cross">
+      <p class="label">Waiting for Run Analysis...</p>
+    </div>
+    <div class="similarity-avg" id="similarity-avg-cross"></div>
+  </div>
+
+</section>
+<script src="app.js"></script>
+</body>
+
+  
