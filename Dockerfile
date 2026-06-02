@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY backend/ backend/
 COPY frontend/ frontend/
-COPY services/ services/
+COPY backend/services/ backend/services/
 
 RUN pip install fastapi uvicorn
 
