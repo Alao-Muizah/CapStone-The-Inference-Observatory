@@ -274,3 +274,10 @@ The design decision to use local inference rather than cloud APIs was central. I
 ## Author
 
 Built by Alao Muizah.
+
+
+---
+title: Inference Observatory
+sdk: docker
+pinned: false
+---
