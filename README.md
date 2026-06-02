@@ -1,3 +1,9 @@
+---
+title: Inference Observatory
+sdk: docker
+pinned: false
+---
+
 #  The Inference Observatory
 
 A local inference engine that runs **10 decoding strategies simultaneously** on a real language model, visualizing how each one works at the token level. Built as a capstone project to demonstrate deep understanding of transformer decoding mechanisms.
@@ -274,10 +280,6 @@ The design decision to use local inference rather than cloud APIs was central. I
 ## Author
 
 Built by Alao Muizah.
+---
 
 
----
-title: Inference Observatory
-sdk: docker
-pinned: false
----
