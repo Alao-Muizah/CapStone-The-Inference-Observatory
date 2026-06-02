@@ -1,4 +1,9 @@
+import os
+
+
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -18,7 +23,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -160,14 +165,16 @@ async def similarity(request: SimilarityRequest):
 
 # ── Run the server ─────────────────────────────────────────────────────────
 
+API_KEY = os.getenv("API_KEY")
+
 if __name__ == "__main__":
     import uvicorn
     print("Starting Inference Observatory backend...")
     print("API docs available at: http://localhost:8000/docs")
     print("Model: Qwen2.5-0.5B (loads on first request)")
     uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    "backend.main:app",
+    host="0.0.0.0",
+    port=7860,
+    reload=False
+)
