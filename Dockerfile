@@ -2,12 +2,11 @@ FROM python:3.10
 
 WORKDIR /app/backend
 
-COPY backend/ backend/
-COPY frontend/ frontend/
-COPY backend/services/ backend/services/
+COPY backend/ .
+COPY frontend/ ../frontend
 
 RUN pip install fastapi uvicorn
 
 EXPOSE 7860
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
