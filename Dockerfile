@@ -1,12 +1,16 @@
-FROM python:3.10
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY backend/requirements.txt .
+
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
 WORKDIR /app/backend
-
-COPY requirements.txt /app/requirements.txt
-COPY backend/ .
-COPY frontend/ ../frontend
-
-RUN pip install --no-cache-dir -r /app/requirements.txt
 
 EXPOSE 7860
 

@@ -6,6 +6,10 @@ import time
 import uuid
 from datetime import datetime
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
 from services.inference import run_single_strategy, run_all_strategies
 from services.attention import extract_attention
 from services.embeddings import compute_similarity
@@ -66,13 +70,22 @@ class SimilarityRequest(BaseModel):
 
 # ── ENDPOINTS ──────────────────────────────────────────────────────────────
 
+frontend_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'frontend')
+)
+
 @app.get("/")
-async def root():
-    return {
-        "status": "online",
-        "service": "Inference Observatory",
-        "model": "Qwen2.5-0.5B"
-    }
+async def serve_frontend():
+    return FileResponse(os.path.join(frontend_path, 'index.html'))
+
+@app.get("/styles.css")
+async def serve_css():
+    return FileResponse(os.path.join(frontend_path, 'styles.css'))
+
+@app.get("/app.js")
+async def serve_js():
+    return FileResponse(os.path.join(frontend_path, 'app.js'))
+
 
 @app.get("/health")
 async def health():
